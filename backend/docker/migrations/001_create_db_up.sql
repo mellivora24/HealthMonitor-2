@@ -1,67 +1,67 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
-                       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                       email VARCHAR(255) UNIQUE NOT NULL,
-                       password_hash VARCHAR(255) NOT NULL,
-                       full_name VARCHAR(255) NOT NULL,
-                       date_of_birth DATE,
-                       gender VARCHAR(20),
-                       phone VARCHAR(20),
-                       height DECIMAL(5,2),
-                       weight DECIMAL(5,2),
-                       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    date_of_birth DATE,
+    gender VARCHAR(20),
+    phone VARCHAR(20),
+    height DECIMAL(5,2),
+    weight DECIMAL(5,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE devices (
-                         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                         device_code VARCHAR(100) UNIQUE NOT NULL,
-                         device_name VARCHAR(255),
-                         is_active BOOLEAN DEFAULT true,
-                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_code VARCHAR(100) UNIQUE NOT NULL,
+    device_name VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE health_data (
-                             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                             user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                             device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
-                             heart_rate DECIMAL(6,2),
-                             spo2 DECIMAL(5,2),
-                             body_temperature DECIMAL(4,2),
-                             blood_pressure_systolic DECIMAL(5,2),
-                             blood_pressure_diastolic DECIMAL(5,2),
-                             accel_x DECIMAL(6,3),
-                             accel_y DECIMAL(6,3),
-                             accel_z DECIMAL(6,3),
-                             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_id UUID NOT NULL REFERENCES devices(id) ON DELETE CASCADE,
+    heart_rate DECIMAL(6,2),
+    spo2 DECIMAL(5,2),
+    body_temperature DECIMAL(4,2),
+    blood_pressure_systolic DECIMAL(5,2),
+    blood_pressure_diastolic DECIMAL(5,2),
+    accel_x DECIMAL(6,3),
+    accel_y DECIMAL(6,3),
+    accel_z DECIMAL(6,3),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE alerts (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                        alert_type VARCHAR(50) NOT NULL,
-                        message TEXT NOT NULL,
-                        is_read BOOLEAN DEFAULT false,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    alert_type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE health_thresholds (
-                                   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                                   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-                                   heart_rate_min DECIMAL(6,2) DEFAULT 60,
-                                   heart_rate_max DECIMAL(6,2) DEFAULT 100,
-                                   spo2_min DECIMAL(5,2) DEFAULT 95,
-                                   body_temp_min DECIMAL(4,2) DEFAULT 36.1,
-                                   body_temp_max DECIMAL(4,2) DEFAULT 37.2,
-                                   bp_systolic_min DECIMAL(5,2) DEFAULT 90,
-                                   bp_systolic_max DECIMAL(5,2) DEFAULT 140,
-                                   bp_diastolic_min DECIMAL(5,2) DEFAULT 60,
-                                   bp_diastolic_max DECIMAL(5,2) DEFAULT 90,
-                                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                   UNIQUE(user_id)
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    heart_rate_min DECIMAL(6,2) DEFAULT 60,
+    heart_rate_max DECIMAL(6,2) DEFAULT 100,
+    spo2_min DECIMAL(5,2) DEFAULT 95,
+    body_temp_min DECIMAL(4,2) DEFAULT 36.1,
+    body_temp_max DECIMAL(4,2) DEFAULT 37.2,
+    bp_systolic_min DECIMAL(5,2) DEFAULT 90,
+    bp_systolic_max DECIMAL(5,2) DEFAULT 140,
+    bp_diastolic_min DECIMAL(5,2) DEFAULT 60,
+    bp_diastolic_max DECIMAL(5,2) DEFAULT 90,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
 );
 
 CREATE INDEX idx_health_data_user_id ON health_data(user_id);
