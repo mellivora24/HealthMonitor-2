@@ -38,23 +38,25 @@ export const HealthMetricCard: React.FC<HealthMetricCardProps> = ({
     const fetchChartData = async () => {
         setIsLoading(true);
         try {
-            const endDate = new Date();
+            const endDate = new Date(); // bây giờ
             const startDate = new Date();
-            startDate.setHours(startDate.getHours() - 24);
+            startDate.setDate(endDate.getDate() - 7); // 7 ngày trước
 
             const data = await healthDataApi.getChartData({
                 start_date: startDate.toISOString(),
                 end_date: endDate.toISOString(),
-                interval: 'hour',
             });
 
-            setChartData(data);
+            // check dữ liệu trước khi set state
+            setChartData(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Error fetching chart data:', error);
+            setChartData([]); // fallback
         } finally {
             setIsLoading(false);
         }
     };
+
 
     return (
         <Card>

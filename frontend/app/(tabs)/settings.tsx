@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Input } from '../../src/components/common/Input';
 import { Button } from '../../src/components/common/Button';
 import { Card } from '../../src/components/common/Card';
@@ -112,16 +114,50 @@ export default function SettingsScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
+            <LinearGradient
+                colors={[COLORS.primary, COLORS.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.header}
+            >
                 <Text style={styles.title}>Cài đặt</Text>
-            </View>
+            </LinearGradient>
 
-            <ScrollView contentContainerStyle={styles.content}>
-                <Card>
+            <ScrollView 
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
+            >
+                {/* Device Configuration Card */}
+                <View style={styles.card}>
+                    <View style={styles.cardIconContainer}>
+                        <LinearGradient
+                            colors={[COLORS.primary, COLORS.primary]}
+                            style={styles.iconGradient}
+                        >
+                            <Text style={styles.cardIcon}>📱</Text>
+                        </LinearGradient>
+                    </View>
+                    
                     <Text style={styles.sectionTitle}>Cấu hình thiết bị</Text>
+                    <Text style={styles.sectionDescription}>
+                        Kết nối và quản lý thiết bị theo dõi sức khỏe của bạn
+                    </Text>
+                    
+                    {deviceCode && (
+                        <View style={styles.currentDeviceContainer}>
+                            <View style={styles.deviceBadge}>
+                                <Text style={styles.deviceBadgeIcon}>✓</Text>
+                            </View>
+                            <View style={styles.deviceInfo}>
+                                <Text style={styles.currentDeviceLabel}>Thiết bị đang kết nối</Text>
+                                <Text style={styles.currentDevice}>{deviceCode}</Text>
+                            </View>
+                        </View>
+                    )}
+                    
                     <Input
                         label="Mã thiết bị"
-                        placeholder="Nhập mã thiết bị"
+                        placeholder="Nhập mã thiết bị của bạn"
                         value={newDeviceCode}
                         onChangeText={(text) => {
                             setNewDeviceCode(text);
@@ -129,114 +165,182 @@ export default function SettingsScreen() {
                         }}
                         error={deviceError}
                     />
-                    {deviceCode && (
-                        <Text style={styles.currentDevice}>Thiết bị hiện tại: {deviceCode}</Text>
-                    )}
+                    
                     <Button
-                        title="Gán thiết bị"
+                        title={deviceCode ? "Cập nhật thiết bị" : "Gán thiết bị"}
                         onPress={handleAssignDevice}
                         isLoading={isLoadingDevice}
+                        style={styles.button}
                     />
-                </Card>
+                </View>
 
-                <Card>
+                {/* Health Thresholds Card */}
+                <View style={styles.card}>
+                    <View style={styles.cardIconContainer}>
+                        <LinearGradient
+                            colors={[COLORS.primary, COLORS.primary]}
+                            style={styles.iconGradient}
+                        >
+                            <Text style={styles.cardIcon}>🔔</Text>
+                        </LinearGradient>
+                    </View>
+                    
                     <Text style={styles.sectionTitle}>Ngưỡng cảnh báo</Text>
+                    <Text style={styles.sectionDescription}>
+                        Tùy chỉnh các giá trị cảnh báo sức khỏe phù hợp với bạn
+                    </Text>
 
-                    <Text style={styles.subsectionTitle}>Nhịp tim (BPM)</Text>
-                    <View style={styles.row}>
+                    {/* Heart Rate */}
+                    <View style={styles.thresholdSection}>
+                        <View style={styles.thresholdHeader}>
+                            <View style={styles.thresholdIconBox}>
+                                <Text style={styles.thresholdIcon}>💓</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.subsectionTitle}>Nhịp tim</Text>
+                                <Text style={styles.subsectionUnit}>Đơn vị: BPM</Text>
+                            </View>
+                        </View>
+                        <View style={styles.row}>
+                            <Input
+                                label="Tối thiểu"
+                                placeholder="60"
+                                value={thresholdForm.heart_rate_min}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, heart_rate_min: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                            <Input
+                                label="Tối đa"
+                                placeholder="100"
+                                value={thresholdForm.heart_rate_max}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, heart_rate_max: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                        </View>
+                    </View>
+
+                    {/* SpO2 */}
+                    <View style={styles.thresholdSection}>
+                        <View style={styles.thresholdHeader}>
+                            <View style={styles.thresholdIconBox}>
+                                <Text style={styles.thresholdIcon}>💧</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.subsectionTitle}>Nồng độ oxy máu</Text>
+                                <Text style={styles.subsectionUnit}>Đơn vị: %</Text>
+                            </View>
+                        </View>
                         <Input
                             label="Tối thiểu"
-                            placeholder="Min"
-                            value={thresholdForm.heart_rate_min}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, heart_rate_min: text })}
+                            placeholder="95"
+                            value={thresholdForm.spo2_min}
+                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, spo2_min: text })}
                             keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
-                        <Input
-                            label="Tối đa"
-                            placeholder="Max"
-                            value={thresholdForm.heart_rate_max}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, heart_rate_max: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
                         />
                     </View>
 
-                    <Text style={styles.subsectionTitle}>SpO2 (%)</Text>
-                    <Input
-                        label="Tối thiểu"
-                        placeholder="Min"
-                        value={thresholdForm.spo2_min}
-                        onChangeText={(text) => setThresholdForm({ ...thresholdForm, spo2_min: text })}
-                        keyboardType="numeric"
-                    />
-
-                    <Text style={styles.subsectionTitle}>Nhiệt độ cơ thể (°C)</Text>
-                    <View style={styles.row}>
-                        <Input
-                            label="Tối thiểu"
-                            placeholder="Min"
-                            value={thresholdForm.body_temp_min}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, body_temp_min: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
-                        <Input
-                            label="Tối đa"
-                            placeholder="Max"
-                            value={thresholdForm.body_temp_max}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, body_temp_max: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
+                    {/* Body Temperature */}
+                    <View style={styles.thresholdSection}>
+                        <View style={styles.thresholdHeader}>
+                            <View style={styles.thresholdIconBox}>
+                                <Text style={styles.thresholdIcon}>🌡️</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.subsectionTitle}>Nhiệt độ cơ thể</Text>
+                                <Text style={styles.subsectionUnit}>Đơn vị: °C</Text>
+                            </View>
+                        </View>
+                        <View style={styles.row}>
+                            <Input
+                                label="Tối thiểu"
+                                placeholder="36.0"
+                                value={thresholdForm.body_temp_min}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, body_temp_min: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                            <Input
+                                label="Tối đa"
+                                placeholder="37.5"
+                                value={thresholdForm.body_temp_max}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, body_temp_max: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                        </View>
                     </View>
 
-                    <Text style={styles.subsectionTitle}>Huyết áp tâm thu (mmHg)</Text>
-                    <View style={styles.row}>
-                        <Input
-                            label="Tối thiểu"
-                            placeholder="Min"
-                            value={thresholdForm.bp_systolic_min}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_systolic_min: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
-                        <Input
-                            label="Tối đa"
-                            placeholder="Max"
-                            value={thresholdForm.bp_systolic_max}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_systolic_max: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
+                    {/* Systolic Blood Pressure */}
+                    <View style={styles.thresholdSection}>
+                        <View style={styles.thresholdHeader}>
+                            <View style={styles.thresholdIconBox}>
+                                <Text style={styles.thresholdIcon}>📊</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.subsectionTitle}>Huyết áp tâm thu</Text>
+                                <Text style={styles.subsectionUnit}>Đơn vị: mmHg</Text>
+                            </View>
+                        </View>
+                        <View style={styles.row}>
+                            <Input
+                                label="Tối thiểu"
+                                placeholder="90"
+                                value={thresholdForm.bp_systolic_min}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_systolic_min: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                            <Input
+                                label="Tối đa"
+                                placeholder="140"
+                                value={thresholdForm.bp_systolic_max}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_systolic_max: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                        </View>
                     </View>
 
-                    <Text style={styles.subsectionTitle}>Huyết áp tâm trương (mmHg)</Text>
-                    <View style={styles.row}>
-                        <Input
-                            label="Tối thiểu"
-                            placeholder="Min"
-                            value={thresholdForm.bp_diastolic_min}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_diastolic_min: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
-                        <Input
-                            label="Tối đa"
-                            placeholder="Max"
-                            value={thresholdForm.bp_diastolic_max}
-                            onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_diastolic_max: text })}
-                            keyboardType="numeric"
-                            style={styles.halfInput}
-                        />
+                    {/* Diastolic Blood Pressure */}
+                    <View style={styles.thresholdSection}>
+                        <View style={styles.thresholdHeader}>
+                            <View style={styles.thresholdIconBox}>
+                                <Text style={styles.thresholdIcon}>📉</Text>
+                            </View>
+                            <View>
+                                <Text style={styles.subsectionTitle}>Huyết áp tâm trương</Text>
+                                <Text style={styles.subsectionUnit}>Đơn vị: mmHg</Text>
+                            </View>
+                        </View>
+                        <View style={styles.row}>
+                            <Input
+                                label="Tối thiểu"
+                                placeholder="60"
+                                value={thresholdForm.bp_diastolic_min}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_diastolic_min: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                            <Input
+                                label="Tối đa"
+                                placeholder="90"
+                                value={thresholdForm.bp_diastolic_max}
+                                onChangeText={(text) => setThresholdForm({ ...thresholdForm, bp_diastolic_max: text })}
+                                keyboardType="numeric"
+                                containerStyle={styles.halfInput}
+                            />
+                        </View>
                     </View>
 
                     <Button
-                        title="Cập nhật ngưỡng"
+                        title="💾 Lưu thay đổi"
                         onPress={handleUpdateThreshold}
                         isLoading={isLoadingThreshold}
+                        style={styles.button}
                     />
-                </Card>
+                </View>
             </ScrollView>
         </View>
     );
@@ -245,40 +349,152 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.background,
+        backgroundColor: '#f8f9fa',
     },
     header: {
-        paddingHorizontal: SPACING.md,
-        paddingVertical: SPACING.md,
-        backgroundColor: COLORS.card,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: SPACING.lg,
+        paddingTop: 50,
+        paddingBottom: 16,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 14,
+        elevation: 6,
     },
     title: {
-        fontSize: FONT_SIZES.xl,
-        fontWeight: 'bold',
-        color: COLORS.text,
-    },
-    content: {
-        padding: SPACING.md,
-    },
-    sectionTitle: {
-        fontSize: FONT_SIZES.lg,
-        fontWeight: 'bold',
-        color: COLORS.text,
-        marginBottom: SPACING.md,
-    },
-    subsectionTitle: {
-        fontSize: FONT_SIZES.md,
-        fontWeight: '600',
-        color: COLORS.text,
-        marginTop: SPACING.md,
+        fontSize: 32,
+        fontWeight: '800',
+        color: '#fff',
         marginBottom: SPACING.xs,
     },
-    currentDevice: {
-        fontSize: FONT_SIZES.sm,
-        color: COLORS.textSecondary,
+    subtitle: {
+        fontSize: FONT_SIZES.md,
+        color: 'rgba(255, 255, 255, 0.9)',
+        fontWeight: '500',
+    },
+    content: {
+        padding: SPACING.lg,
+        paddingBottom: SPACING.xl * 2,
+    },
+    card: {
+        marginBottom: SPACING.lg,
+        padding: SPACING.xl,
+        borderRadius: 24,
+        backgroundColor: '#fff',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+        elevation: 5,
+    },
+    cardIconContainer: {
+        alignItems: 'center',
         marginBottom: SPACING.md,
+    },
+    iconGradient: {
+        width: 64,
+        height: 64,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: COLORS.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    cardIcon: {
+        fontSize: 32,
+    },
+    sectionTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#1a1a1a',
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
+    },
+    sectionDescription: {
+        fontSize: FONT_SIZES.sm,
+        color: '#6b7280',
+        textAlign: 'center',
+        marginBottom: SPACING.lg,
+        lineHeight: 20,
+    },
+    currentDeviceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f0f9ff',
+        padding: SPACING.lg,
+        borderRadius: 16,
+        marginBottom: SPACING.lg,
+        borderWidth: 2,
+        borderColor: '#bfdbfe',
+    },
+    deviceBadge: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: COLORS.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: SPACING.md,
+    },
+    deviceBadgeIcon: {
+        fontSize: 24,
+        color: '#fff',
+    },
+    deviceInfo: {
+        flex: 1,
+    },
+    currentDeviceLabel: {
+        fontSize: FONT_SIZES.xs,
+        color: '#64748b',
+        marginBottom: 4,
+        textTransform: 'uppercase',
+        fontWeight: '600',
+        letterSpacing: 0.5,
+    },
+    currentDevice: {
+        fontSize: FONT_SIZES.lg,
+        color: COLORS.primary,
+        fontWeight: '700',
+    },
+    thresholdSection: {
+        marginTop: SPACING.xl,
+        paddingTop: SPACING.lg,
+        borderTopWidth: 1,
+        borderTopColor: '#f3f4f6',
+    },
+    thresholdHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING.md,
+    },
+    thresholdIconBox: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#fef3c7',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: SPACING.md,
+    },
+    thresholdIcon: {
+        fontSize: 24,
+    },
+    subsectionTitle: {
+        fontSize: FONT_SIZES.lg,
+        fontWeight: '700',
+        color: '#1a1a1a',
+        marginBottom: 2,
+    },
+    subsectionUnit: {
+        fontSize: FONT_SIZES.xs,
+        color: '#9ca3af',
+        fontWeight: '500',
     },
     row: {
         flexDirection: 'row',
@@ -286,5 +502,10 @@ const styles = StyleSheet.create({
     },
     halfInput: {
         flex: 1,
+    },
+    button: {
+        marginTop: SPACING.xl,
+        borderRadius: 16,
+        paddingVertical: SPACING.md + 2,
     },
 });

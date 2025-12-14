@@ -13,11 +13,11 @@
 
 #define WIFI_SSID "KidsLAB"
 #define WIFI_PASSWORD "hoianhHung"
-#define MQTT_BROKER "192.168.1.102"
+#define MQTT_BROKER "192.168.1.103"
 #define MQTT_PORT 1883
 #define MQTT_USER "admin"
 #define MQTT_PASSWORD "admin123456"
-#define DEVICE_CODE "DEVICE_001"
+#define DEVICE_CODE "DEVICE_123"
 char MQTT_TOPIC[64];
 
 #define HX711_DOUT_PIN 21
@@ -26,7 +26,6 @@ char MQTT_TOPIC[64];
 #define PUMP_PIN 5
 
 #define MQTT_PUBLISH_INTERVAL 2000
-#define BP_MEASURE_INTERVAL 300000
 #define SENSOR_READ_INTERVAL 2000
 
 #define PRESSURE_SCALE_FACTOR 2280.0f
@@ -63,8 +62,8 @@ uint32_t irBuffer[MAX30102_BUFFER_SIZE];
 uint32_t redBuffer[MAX30102_BUFFER_SIZE];
 HealthData currentData;
 unsigned long lastMqttPublish = 0;
-unsigned long lastBPMeasure = 0;
 unsigned long lastSensorRead = 0;
+bool bpMeasured = false;  // Flag để đánh dấu đã đo BP
 
 void setupWiFi();
 void setupMQTT();
@@ -81,7 +80,7 @@ void setup() {
     Serial.begin(115200);
     while (!Serial) delay(10);
 
-    snprintf(MQTT_TOPIC, sizeof(MQTT_TOPIC), "/health_monitor/%s/data", DEVICE_CODE);
+    snprintf(MQTT_TOPIC, sizeof(MQTT_TOPIC), "/health_monitor/%s/data/", DEVICE_CODE);
 
     pinMode(PUMP_PIN, OUTPUT);
     digitalWrite(PUMP_PIN, LOW);
@@ -92,10 +91,13 @@ void setup() {
     Wire.begin();
     initSensors();
 
+    // Đo huyết áp 1 lần duy nhất khi khởi động
     if (sensors.hx711) {
+        Serial.println("Measuring blood pressure on startup...");
         delay(2000);
         measureBloodPressure();
-        lastBPMeasure = millis();
+        bpMeasured = true;
+        Serial.println("Blood pressure measured successfully!");
     }
 }
 
@@ -107,24 +109,22 @@ void loop() {
 
     unsigned long currentMillis = millis();
 
+    // Chỉ cho phép đo lại BP thủ công qua Serial
     if (Serial.available()) {
         char cmd = Serial.read();
         if (cmd == 'B' || cmd == 'b') {
+            Serial.println("Manual BP measurement triggered...");
             measureBloodPressure();
-            lastBPMeasure = currentMillis;
         }
     }
 
-    if (sensors.hx711 && (currentMillis - lastBPMeasure >= BP_MEASURE_INTERVAL)) {
-        measureBloodPressure();
-        lastBPMeasure = currentMillis;
-    }
-
+    // Đọc các cảm biến khác (không bao gồm BP)
     if (currentMillis - lastSensorRead >= SENSOR_READ_INTERVAL) {
         readAllSensors();
         lastSensorRead = currentMillis;
     }
 
+    // Publish dữ liệu qua MQTT
     if (currentMillis - lastMqttPublish >= MQTT_PUBLISH_INTERVAL) {
         publishToMQTT();
         lastMqttPublish = currentMillis;
@@ -132,11 +132,20 @@ void loop() {
 }
 
 void setupWiFi() {
+    Serial.print("Connecting to WiFi");
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
         delay(500);
+        Serial.print(".");
         attempts++;
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("\nWiFi connected!");
+        Serial.print("IP: ");
+        Serial.println(WiFi.localIP());
+    } else {
+        Serial.println("\nWiFi connection failed!");
     }
 }
 
@@ -147,9 +156,14 @@ void setupMQTT() {
 
 void reconnectMQTT() {
     while (!mqttClient.connected()) {
+        Serial.print("Connecting to MQTT...");
         if (mqttClient.connect(DEVICE_CODE, MQTT_USER, MQTT_PASSWORD)) {
+            Serial.println("connected!");
             return;
         } else {
+            Serial.print("failed, rc=");
+            Serial.print(mqttClient.state());
+            Serial.println(" retrying in 5s");
             delay(5000);
         }
     }
@@ -169,7 +183,8 @@ void publishToMQTT() {
         doc["body_temperature"] = currentData.bodyTemperature;
     }
 
-    if (currentData.bpSystolic > 0) {
+    // Luôn gửi giá trị BP nếu đã đo 1 lần
+    if (bpMeasured && currentData.bpSystolic > 0) {
         doc["bp_systolic"] = currentData.bpSystolic;
         doc["bp_diastolic"] = currentData.bpDiastolic;
     }
@@ -186,21 +201,30 @@ void publishToMQTT() {
 }
 
 void initSensors() {
+    Serial.println("Initializing sensors...");
+    
     if (particleSensor.begin()) {
         particleSensor.setup();
         particleSensor.setPulseAmplitudeRed(0x0A);
         particleSensor.setPulseAmplitudeGreen(0);
         sensors.max30102 = true;
+        Serial.println("✓ MAX30102 initialized");
+    } else {
+        Serial.println("✗ MAX30102 failed");
     }
     delay(200);
 
     if (imu.begin() == 0) {
         sensors.lsm6ds3 = true;
+        Serial.println("✓ LSM6DS3 initialized (0x6A)");
     } else {
         LSM6DS3 imu2(I2C_MODE, 0x6B);
         if (imu2.begin() == 0) {
             imu = imu2;
             sensors.lsm6ds3 = true;
+            Serial.println("✓ LSM6DS3 initialized (0x6B)");
+        } else {
+            Serial.println("✗ LSM6DS3 failed");
         }
     }
     delay(200);
@@ -211,6 +235,9 @@ void initSensors() {
         tempSensor.setResolution(12);
         tempSensor.setWaitForConversion(false);
         sensors.ds18b20 = true;
+        Serial.println("✓ DS18B20 initialized");
+    } else {
+        Serial.println("✗ DS18B20 failed");
     }
     delay(200);
 
@@ -220,6 +247,9 @@ void initSensors() {
         pressureScale.tare();
         delay(500);
         sensors.hx711 = true;
+        Serial.println("✓ HX711 initialized");
+    } else {
+        Serial.println("✗ HX711 failed");
     }
 }
 
@@ -306,10 +336,17 @@ bool readAccelerometer(float &x, float &y, float &z) {
 }
 
 void measureBloodPressure() {
-    if (!sensors.hx711) return;
+    if (!sensors.hx711) {
+        Serial.println("HX711 not available!");
+        return;
+    }
 
-    if (!pressureScale.wait_ready_timeout(1000)) return;
+    if (!pressureScale.wait_ready_timeout(1000)) {
+        Serial.println("HX711 not ready!");
+        return;
+    }
 
+    Serial.println("Starting BP measurement...");
     pressureScale.tare();
     delay(500);
 
@@ -318,6 +355,7 @@ void measureBloodPressure() {
     int count = 0;
 
     digitalWrite(PUMP_PIN, HIGH);
+    Serial.println("Pump ON - Inflating...");
 
     unsigned long start = millis();
     while (millis() - start < 3000 && count < MAX_SAMPLES) {
@@ -328,9 +366,13 @@ void measureBloodPressure() {
     }
 
     digitalWrite(PUMP_PIN, LOW);
+    Serial.println("Pump OFF - Deflating...");
     delay(1000);
 
-    if (count < 10) return;
+    if (count < 10) {
+        Serial.println("Not enough samples!");
+        return;
+    }
 
     float maxP = pressures[0];
     float minP = pressures[0];
@@ -354,4 +396,9 @@ void measureBloodPressure() {
 
     currentData.bpSystolic = systolic;
     currentData.bpDiastolic = diastolic;
+
+    Serial.print("BP: ");
+    Serial.print(systolic);
+    Serial.print("/");
+    Serial.println(diastolic);
 }

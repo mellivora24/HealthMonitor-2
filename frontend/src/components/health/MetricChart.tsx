@@ -17,6 +17,10 @@ export const MetricChart: React.FC<MetricChartProps> = ({
 }) => {
     const screenWidth = Dimensions.get('window').width - SPACING.md * 4;
 
+    if (!Array.isArray(data) || data.length === 0) {
+        return null;
+    }
+
     const chartData = {
         labels: data.map((item) => {
             const date = new Date(item.timestamp);

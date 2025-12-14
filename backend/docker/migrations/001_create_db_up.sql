@@ -17,7 +17,7 @@ CREATE TABLE users (
 CREATE TABLE devices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    device_code VARCHAR(100) UNIQUE NOT NULL,
+    device_code VARCHAR(100) UNIQUE,
     device_name VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

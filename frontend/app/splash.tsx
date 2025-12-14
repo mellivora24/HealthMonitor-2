@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { COLORS, SPACING, FONT_SIZES } from '../src/constants/theme';
 
 export default function SplashScreen() {
     const router = useRouter();
+    const hasNavigated = useRef(false); // Prevent multiple navigations
 
     useEffect(() => {
+        if (hasNavigated.current) return;
+        
         const timer = setTimeout(() => {
+            hasNavigated.current = true;
             router.replace('/welcome');
         }, 2000);
 

@@ -28,7 +28,7 @@ export default function HealthHistoryModal() {
     try {
       const response = await healthDataApi.getPaginated({
         page,
-        page_size: 20,
+        limit: 20,
       });
       setData(response.data);
       setTotalPages(response.total_pages);

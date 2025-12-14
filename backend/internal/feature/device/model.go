@@ -7,13 +7,13 @@ import (
 )
 
 type Device struct {
-	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID     *uuid.UUID `gorm:"type:uuid;index" json:"user_id,omitempty"`
-	DeviceCode string     `gorm:"type:varchar(100);unique;not null;index" json:"device_code"`
-	DeviceName string     `gorm:"type:varchar(255)" json:"device_name,omitempty"`
-	IsActive   bool       `gorm:"default:true" json:"is_active"`
-	CreatedAt  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt  time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID         uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID     uuid.UUID `gorm:"type:uuid;not null;index:idx_devices_user_id" json:"user_id"`
+	DeviceCode string    `gorm:"type:varchar(100);unique;index:idx_devices_device_code" json:"device_code"`
+	DeviceName string    `gorm:"type:varchar(255)" json:"device_name"`
+	IsActive   bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt  time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt  time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (Device) TableName() string {

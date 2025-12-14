@@ -101,6 +101,8 @@ func initializeApplication() (*Application, error) {
 		return nil, fmt.Errorf("failed to initialize MQTT handler: %w", err)
 	}
 
+	fmt.Println("Backend is running at", fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port))
+
 	return app, nil
 }
 

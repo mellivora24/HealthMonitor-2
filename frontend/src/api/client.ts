@@ -50,22 +50,29 @@ class ApiClient {
 
     async get<T>(url: string, params?: any): Promise<T> {
         const response = await this.client.get<ApiResponse<T>>(url, { params });
-        return response.data.data as T;
+        // console.log('GET Response:', response.data);
+        // if (url.includes('health-data/chart')) {
+        //     console.log('Chart Data Response:', response.data);
+        // }
+        return response.data as T;
     }
 
     async post<T>(url: string, data?: any): Promise<T> {
         const response = await this.client.post<ApiResponse<T>>(url, data);
-        return response.data.data as T;
+        // console.log('POST Response:', response);
+        return response.data as T;
     }
 
     async put<T>(url: string, data?: any): Promise<T> {
         const response = await this.client.put<ApiResponse<T>>(url, data);
-        return response.data.data as T;
+        // console.log('PUT Response:', response);
+        return response.data as T;
     }
 
     async delete<T>(url: string): Promise<T> {
         const response = await this.client.delete<ApiResponse<T>>(url);
-        return response.data.data as T;
+        // console.log('DELETE Response:', response);
+        return response.data as T;
     }
 }
 

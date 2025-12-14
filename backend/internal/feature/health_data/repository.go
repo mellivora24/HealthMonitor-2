@@ -113,7 +113,7 @@ func (r *repository) GetStats(userID uuid.UUID, deviceID *uuid.UUID, startDate, 
 		AVG(heart_rate) as avg_heart_rate,
 		MIN(heart_rate) as min_heart_rate,
 		MAX(heart_rate) as max_heart_rate,
-		AVG(sp_o2) as avg_sp_o2,
+		AVG(spo2) as avg_spo2,
 		AVG(body_temperature) as avg_body_temperature,
 		AVG(blood_pressure_systolic) as avg_blood_pressure_systolic,
 		AVG(blood_pressure_diastolic) as avg_blood_pressure_diastolic
@@ -151,7 +151,7 @@ func (r *repository) GetChartData(userID uuid.UUID, req GetChartDataRequest) ([]
 	err := query.Select(`
 		` + groupBy + ` as timestamp,
 		AVG(heart_rate) as heart_rate,
-		AVG(sp_o2) as sp_o2,
+		AVG(spo2) as spo2,
 		AVG(body_temperature) as body_temperature,
 		AVG(blood_pressure_systolic) as blood_pressure_systolic,
 		AVG(blood_pressure_diastolic) as blood_pressure_diastolic

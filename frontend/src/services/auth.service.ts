@@ -19,15 +19,9 @@ export class AuthService {
     }
 
     static async logout(): Promise<void> {
-        try {
-            await authApi.logout();
-        } catch (error) {
-            console.error('Error during logout:', error);
-        } finally {
-            await StorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-            await StorageService.removeItem(STORAGE_KEYS.USER_DATA);
-            await StorageService.removeItem(STORAGE_KEYS.DEVICE_CODE);
-        }
+        await StorageService.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+        await StorageService.removeItem(STORAGE_KEYS.USER_DATA);
+        await StorageService.removeItem(STORAGE_KEYS.DEVICE_CODE);
     }
 
     static async getToken(): Promise<string | null> {
@@ -37,12 +31,7 @@ export class AuthService {
     static async isAuthenticated(): Promise<boolean> {
         const token = await this.getToken();
         if (!token) return false;
-
-        try {
-            return await authApi.verifyToken();
-        } catch {
-            return false;
-        }
+        return true;
     }
 
     static async getCurrentUser(): Promise<User | null> {

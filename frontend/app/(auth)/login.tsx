@@ -51,16 +51,24 @@ export default function LoginScreen() {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
-                    <Text style={styles.title}>Đăng nhập</Text>
-                    <Text style={styles.subtitle}>Chào mừng trở lại!</Text>
+                    <View style={styles.logoContainer}>
+                        <View style={styles.logo}>
+                            <Text style={styles.logoText}>📱</Text>
+                        </View>
+                    </View>
+                    <Text style={styles.title}>Chào mừng trở lại</Text>
+                    <Text style={styles.subtitle}>Đăng nhập để tiếp tục</Text>
                 </View>
 
-                <View style={styles.form}>
+                <View style={styles.formCard}>
                     <Input
                         label="Email"
-                        placeholder="Nhập email"
+                        placeholder="example@email.com"
                         value={formData.email}
                         onChangeText={(text) => {
                             setFormData({ ...formData, email: text });
@@ -73,7 +81,7 @@ export default function LoginScreen() {
 
                     <Input
                         label="Mật khẩu"
-                        placeholder="Nhập mật khẩu"
+                        placeholder="Nhập mật khẩu của bạn"
                         value={formData.password}
                         onChangeText={(text) => {
                             setFormData({ ...formData, password: text });
@@ -89,16 +97,23 @@ export default function LoginScreen() {
                         isLoading={isLoading}
                         style={styles.loginButton}
                     />
+                </View>
 
-                    <View style={styles.registerContainer}>
-                        <Text style={styles.registerText}>Chưa có tài khoản? </Text>
-                        <Button
-                            title="Đăng ký ngay"
-                            onPress={handleRegister}
-                            variant="outline"
-                            size="small"
-                        />
-                    </View>
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>hoặc</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>Chưa có tài khoản?</Text>
+                    <Button
+                        title="Đăng ký ngay"
+                        onPress={handleRegister}
+                        variant="outline"
+                        size="small"
+                        style={styles.registerButton}
+                    />
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -113,36 +128,95 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         paddingHorizontal: SPACING.xl,
-        paddingVertical: SPACING.xl,
+        paddingTop: SPACING.xl * 3,
+        paddingBottom: SPACING.xl * 2,
     },
     header: {
-        marginTop: SPACING.xl * 2,
+        alignItems: 'center',
+        marginBottom: SPACING.xl * 2,
+    },
+    logoContainer: {
         marginBottom: SPACING.xl,
     },
+    logo: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: COLORS.primary + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: COLORS.primary,
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    logoText: {
+        fontSize: 40,
+    },
     title: {
-        fontSize: FONT_SIZES.xxl,
-        fontWeight: 'bold',
+        fontSize: FONT_SIZES.xxl + 4,
+        fontWeight: '700',
         color: COLORS.text,
         marginBottom: SPACING.xs,
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: FONT_SIZES.md,
         color: COLORS.textSecondary,
+        textAlign: 'center',
+        fontWeight: '400',
     },
-    form: {
-        flex: 1,
+    formCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: SPACING.xl,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
     },
     loginButton: {
-        marginTop: SPACING.md,
+        marginTop: SPACING.lg,
+        borderRadius: 12,
+        height: 56,
     },
-    registerContainer: {
+    divider: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: SPACING.xl,
+        marginVertical: SPACING.xl,
+        paddingHorizontal: SPACING.md,
     },
-    registerText: {
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.border || '#E5E5E5',
+    },
+    dividerText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.textSecondary,
+        marginHorizontal: SPACING.md,
+        fontWeight: '500',
+    },
+    footer: {
+        alignItems: 'center',
+        marginTop: SPACING.md,
+    },
+    footerText: {
         fontSize: FONT_SIZES.md,
         color: COLORS.textSecondary,
+        marginBottom: SPACING.md,
+        fontWeight: '400',
+    },
+    registerButton: {
+        minWidth: 140,
+        borderRadius: 12,
     },
 });

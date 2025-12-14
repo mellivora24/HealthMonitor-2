@@ -61,16 +61,19 @@ export default function RegisterScreen() {
             style={styles.container}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <ScrollView contentContainerStyle={styles.scrollContent}>
+            <ScrollView 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
-                    <Text style={styles.title}>Đăng ký</Text>
-                    <Text style={styles.subtitle}>Tạo tài khoản mới</Text>
+                    <Text style={styles.title}>Tạo tài khoản mới</Text>
+                    <Text style={styles.subtitle}>Đăng ký để bắt đầu</Text>
                 </View>
 
-                <View style={styles.form}>
+                <View style={styles.formCard}>
                     <Input
                         label="Họ và tên"
-                        placeholder="Nhập họ và tên"
+                        placeholder="Nguyễn Văn A"
                         value={formData.full_name}
                         onChangeText={(text) => {
                             setFormData({ ...formData, full_name: text });
@@ -81,7 +84,7 @@ export default function RegisterScreen() {
 
                     <Input
                         label="Email"
-                        placeholder="Nhập email"
+                        placeholder="example@email.com"
                         value={formData.email}
                         onChangeText={(text) => {
                             setFormData({ ...formData, email: text });
@@ -94,7 +97,7 @@ export default function RegisterScreen() {
 
                     <Input
                         label="Mật khẩu"
-                        placeholder="Nhập mật khẩu (tối thiểu 8 ký tự)"
+                        placeholder="Tối thiểu 8 ký tự"
                         value={formData.password}
                         onChangeText={(text) => {
                             setFormData({ ...formData, password: text });
@@ -122,16 +125,23 @@ export default function RegisterScreen() {
                         isLoading={isLoading}
                         style={styles.registerButton}
                     />
+                </View>
 
-                    <View style={styles.loginContainer}>
-                        <Text style={styles.loginText}>Đã có tài khoản? </Text>
-                        <Button
-                            title="Đăng nhập"
-                            onPress={handleLogin}
-                            variant="outline"
-                            size="small"
-                        />
-                    </View>
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>hoặc</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+
+                <View style={styles.footer}>
+                    <Text style={styles.footerText}>Đã có tài khoản?</Text>
+                    <Button
+                        title="Đăng nhập"
+                        onPress={handleLogin}
+                        variant="outline"
+                        size="small"
+                        style={styles.loginButton}
+                    />
                 </View>
             </ScrollView>
         </KeyboardAvoidingView>
@@ -146,36 +156,95 @@ const styles = StyleSheet.create({
     scrollContent: {
         flexGrow: 1,
         paddingHorizontal: SPACING.xl,
-        paddingVertical: SPACING.xl,
+        paddingTop: SPACING.xl * 2,
+        paddingBottom: SPACING.xl * 2,
     },
     header: {
-        marginTop: SPACING.xl,
-        marginBottom: SPACING.xl,
+        alignItems: 'center',
+        marginBottom: SPACING.xl + SPACING.md,
+    },
+    logoContainer: {
+        marginBottom: SPACING.lg,
+    },
+    logo: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: COLORS.primary + '15',
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: COLORS.primary,
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 8,
+    },
+    logoText: {
+        fontSize: 40,
     },
     title: {
-        fontSize: FONT_SIZES.xxl,
-        fontWeight: 'bold',
+        fontSize: FONT_SIZES.xxl + 4,
+        fontWeight: '700',
         color: COLORS.text,
         marginBottom: SPACING.xs,
+        textAlign: 'center',
     },
     subtitle: {
         fontSize: FONT_SIZES.md,
         color: COLORS.textSecondary,
+        textAlign: 'center',
+        fontWeight: '400',
     },
-    form: {
-        flex: 1,
+    formCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 20,
+        padding: SPACING.xl,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 4,
     },
     registerButton: {
-        marginTop: SPACING.md,
+        marginTop: SPACING.lg,
+        borderRadius: 12,
+        height: 56,
     },
-    loginContainer: {
+    divider: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: SPACING.xl,
+        marginVertical: SPACING.xl,
+        paddingHorizontal: SPACING.md,
     },
-    loginText: {
+    dividerLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.border || '#E5E5E5',
+    },
+    dividerText: {
+        fontSize: FONT_SIZES.sm,
+        color: COLORS.textSecondary,
+        marginHorizontal: SPACING.md,
+        fontWeight: '500',
+    },
+    footer: {
+        alignItems: 'center',
+        marginTop: SPACING.md,
+    },
+    footerText: {
         fontSize: FONT_SIZES.md,
         color: COLORS.textSecondary,
+        marginBottom: SPACING.md,
+        fontWeight: '400',
+    },
+    loginButton: {
+        minWidth: 140,
+        borderRadius: 12,
     },
 });

@@ -1,36 +1,41 @@
-import { Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { StatusBar } from 'expo-status-bar';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function RootLayout() {
-    return (
-        <>
-            <StatusBar style="auto" />
-            <Stack
-                screenOptions={{
-                    headerShown: false,
-                }}
-            >
-                <Stack.Screen name="index" options={{ headerShown: false }} />
-                <Stack.Screen name="splash" options={{ headerShown: false }} />
-                <Stack.Screen name="welcome" options={{ headerShown: false }} />
-                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen
-                    name="modals/edit-profile"
-                    options={{
-                        presentation: 'modal',
-                        headerShown: false,
-                    }}
-                />
-                <Stack.Screen
-                    name="modals/health-history"
-                    options={{
-                        presentation: 'modal',
-                        headerShown: false,
-                    }}
-                />
-            </Stack>
-        </>
-    );
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: '#007AFF',
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="alerts"
+        options={{
+          title: 'Alerts',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
 }

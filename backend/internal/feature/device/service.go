@@ -98,15 +98,23 @@ func (s *service) UpdateDevice(id uuid.UUID, req UpdateDeviceRequest) (*DeviceRe
 
 func (s *service) AssignDevice(userID uuid.UUID, req AssignDeviceRequest) (*DeviceResponse, error) {
 	device, err := s.repo.FindByCode(req.DeviceCode)
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("device not found")
+			newDevice := &Device{
+				UserID:     userID,
+				DeviceCode: req.DeviceCode,
+				DeviceName: req.DeviceCode,
+				IsActive:   true,
+			}
+
+			if err := s.repo.Create(newDevice); err != nil {
+				return nil, err
+			}
+
+			return s.toResponse(newDevice), nil
 		}
 		return nil, err
-	}
-
-	if device.UserID != nil {
-		return nil, errors.New("device is already assigned to another user")
 	}
 
 	if err := s.repo.AssignToUser(req.DeviceCode, userID); err != nil {
@@ -127,7 +135,7 @@ func (s *service) UnassignDevice(deviceCode string, userID uuid.UUID) error {
 		return err
 	}
 
-	if device.UserID == nil || *device.UserID != userID {
+	if device.UserID == uuid.Nil || device.UserID != userID {
 		return errors.New("device is not assigned to this user")
 	}
 
@@ -140,21 +148,21 @@ func (s *service) DeleteDevice(id uuid.UUID, userID uuid.UUID) error {
 		return err
 	}
 
-	if device.UserID == nil || *device.UserID != userID {
+	if device.UserID == uuid.Nil || device.UserID != userID {
 		return errors.New("device is not assigned to this user")
 	}
 
-	return s.repo.UnassignDevice(device.DeviceCode)
+	return s.repo.Delete(id)
 }
 
 func (s *service) toResponse(device *Device) *DeviceResponse {
 	return &DeviceResponse{
 		ID:         device.ID,
-		UserID:     device.UserID,
+		UserID:     &device.UserID,
 		DeviceCode: device.DeviceCode,
 		DeviceName: device.DeviceName,
 		IsActive:   device.IsActive,
-		IsAssigned: device.UserID != nil,
+		IsAssigned: device.UserID != uuid.Nil,
 		CreatedAt:  device.CreatedAt,
 	}
 }

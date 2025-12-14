@@ -1,6 +1,6 @@
 export const API_CONFIG = {
-    BASE_URL: 'http://localhost:8080/api/v1',
-    WS_URL: 'ws://localhost:8080/ws',
+    BASE_URL: 'http://192.168.1.103:8080/api/v1',
+    WS_URL: 'ws://192.168.1.103:8080/api/v1/ws',
     TIMEOUT: 10000,
 };
 

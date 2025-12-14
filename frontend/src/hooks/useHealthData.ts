@@ -1,66 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { healthDataApi } from '../api';
-import { useHealthStore } from '../store/healthStore';
-import { GetChartDataRequest } from '../types';
 
 export const useHealthData = () => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const { latestData, chartData, stats, setLatestData, setChartData, setStats } = useHealthStore();
+    const [latestData, setLatestData] = useState<any>(null);
 
     const fetchLatest = async () => {
-        setIsLoading(true);
-        setError(null);
         try {
-            const data = await healthDataApi.getLatest();
-            setLatestData(data);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
+            const res = await healthDataApi.getLatest();
+            setLatestData(res);
+        } catch (e) {
+            console.error('fetchLatest error', e);
         }
     };
-
-    const fetchChartData = async (params: GetChartDataRequest) => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const data = await healthDataApi.getChartData(params);
-            setChartData(data);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const fetchStats = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const data = await healthDataApi.getStats();
-            setStats(data);
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchLatest();
-        fetchStats();
-    }, []);
 
     return {
         latestData,
-        chartData,
-        stats,
-        isLoading,
-        error,
+        setLatestData, // 👈 WS SẼ DÙNG
         fetchLatest,
-        fetchChartData,
-        fetchStats,
     };
 };

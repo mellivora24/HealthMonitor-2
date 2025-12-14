@@ -51,71 +51,48 @@ func (h *Handler) Init() error {
 }
 
 func (h *Handler) onHealthData(client mqtt.Client, msg mqtt.Message) {
-	log.Printf("[MQTT Handler] Received message from: %s", msg.Topic())
+	log.Printf("[MQTT] Received: %s", msg.Payload())
 
-	var healthPayload health_data.MQTTHealthPayload
-	if err := json.Unmarshal(msg.Payload(), &healthPayload); err != nil {
-		log.Printf("[MQTT Handler] Error unmarshaling JSON payload: %v", err)
-		log.Printf("[MQTT Handler] RAW PAYLOAD: %s", string(msg.Payload()))
+	var payload health_data.MQTTHealthPayload
+	if err := json.Unmarshal(msg.Payload(), &payload); err != nil {
+		log.Printf("Invalid payload: %v", err)
 		return
 	}
 
-	if healthPayload.DeviceCode == "" {
-		log.Printf("[MQTT Handler] Missing device_code in payload")
-		log.Printf("[MQTT Handler] RAW PAYLOAD: %s", string(msg.Payload()))
+	device, err := h.deviceService.GetDeviceByCode(payload.DeviceCode)
+	if err != nil || !device.IsActive || device.UserID == nil {
 		return
 	}
 
-	deviceInfo, err := h.deviceService.GetDeviceByCode(healthPayload.DeviceCode)
-	if err != nil {
-		log.Printf("[MQTT Handler] Device not found for code '%s': %v", healthPayload.DeviceCode, err)
-		return
+	userID := *device.UserID
+
+	record := &health_data.HealthData{
+		UserID:          userID,
+		DeviceID:        device.ID,
+		HeartRate:       payload.HeartRate,
+		SpO2:            payload.SpO2,
+		BodyTemperature: payload.BodyTemperature,
+		BPSystolic:      payload.BPSystolic,
+		BPDiastolic:     payload.BPDiastolic,
+		AccelX:          payload.AccelX,
+		AccelY:          payload.AccelY,
+		AccelZ:          payload.AccelZ,
+		CreatedAt:       time.Now(),
 	}
 
-	if !deviceInfo.IsActive {
-		log.Printf("[MQTT Handler] Device '%s' is inactive", healthPayload.DeviceCode)
-		return
-	}
+	_ = h.healthDataService.CreateHealthData(record)
 
-	if deviceInfo.UserID == nil {
-		log.Printf("[MQTT Handler] Device '%s' is not assigned to any user", healthPayload.DeviceCode)
-		return
-	}
-
-	healthRecord := &health_data.HealthData{
-		UserID:                 *deviceInfo.UserID,
-		DeviceID:               deviceInfo.ID,
-		HeartRate:              healthPayload.HeartRate,
-		SpO2:                   healthPayload.SpO2,
-		BodyTemperature:        healthPayload.BodyTemperature,
-		BloodPressureSystolic:  healthPayload.BPSystolic,
-		BloodPressureDiastolic: healthPayload.BPDiastolic,
-		AccelX:                 healthPayload.AccelX,
-		AccelY:                 healthPayload.AccelY,
-		AccelZ:                 healthPayload.AccelZ,
-		CreatedAt:              time.Now(),
-	}
-
-	if err := h.healthDataService.CreateHealthData(healthRecord); err != nil {
-		log.Printf("[MQTT Handler] Error saving health data: %v", err)
-	} else {
-		log.Printf("[MQTT Handler] Saved health data - Device: %s", healthPayload.DeviceCode)
-	}
-
-	if h.healthDataService.DetectFall(healthPayload.AccelX, healthPayload.AccelY, healthPayload.AccelZ) {
-		h.createAlert(*deviceInfo.UserID, alert.AlertTypeFallDetection, "Fall detected! Immediate attention may be required.")
-	}
-
-	h.checkHealthThresholds(*deviceInfo.UserID, &healthPayload)
-
-	wsMsg := shared.RealtimeModel{
+	healthMsg := shared.RealtimeModel{
 		Topic:   "health_data",
-		Payload: healthPayload,
+		Payload: payload,
+	}
+	h.wsService.SendToClient(userID.String(), healthMsg)
+
+	if h.healthDataService.DetectFall(payload.AccelX, payload.AccelY, payload.AccelZ) {
+		h.createAlert(userID, alert.AlertTypeFallDetection, "Fall detected! Immediate attention may be required.")
 	}
 
-	if err := h.wsService.BroadcastToMCU(healthPayload.DeviceCode, wsMsg); err != nil {
-		log.Printf("[MQTT Handler] Error broadcasting: %v", err)
-	}
+	h.checkHealthThresholds(userID, &payload)
 }
 
 func (h *Handler) checkHealthThresholds(userID uuid.UUID, payload *health_data.MQTTHealthPayload) {
@@ -205,11 +182,4 @@ func (h *Handler) createAlert(userID uuid.UUID, alertType, message string) {
 	if err := h.wsService.SendToClient(userID.String(), wsMsg); err != nil {
 		log.Printf("[MQTT Handler] Error broadcasting alert: %v", err)
 	}
-}
-
-func getFloatValue(val *float64) float64 {
-	if val == nil {
-		return 0.0
-	}
-	return *val
 }

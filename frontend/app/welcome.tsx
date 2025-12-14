@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '../src/components/common/Button';
 import { useAuthStore } from '../src/store/authStore';
@@ -8,15 +8,25 @@ import { COLORS, SPACING, FONT_SIZES } from '../src/constants/theme';
 export default function WelcomeScreen() {
     const router = useRouter();
     const checkAuth = useAuthStore((state) => state.checkAuth);
+    const hasChecked = useRef(false); // Prevent multiple checks
 
     useEffect(() => {
+        if (hasChecked.current) return;
+        
         checkAuthStatus();
     }, []);
 
     const checkAuthStatus = async () => {
-        const isAuthenticated = await checkAuth();
-        if (isAuthenticated) {
-            router.replace('/(tabs)');
+        if (hasChecked.current) return;
+        hasChecked.current = true;
+        
+        try {
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                router.replace('/(tabs)');
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
         }
     };
 

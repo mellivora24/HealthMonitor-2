@@ -14,8 +14,8 @@ import (
 
 type wsService struct {
 	hub     *network.WebSocketHub
-	clients map[string]*realtimeShared.Client
-	mcuMap  map[string][]string
+	clients map[string]*realtimeShared.Client // key = clientID
+	mcuMap  map[string][]string               // mcuCode -> []clientID
 	mu      sync.RWMutex
 }
 
@@ -43,7 +43,7 @@ func (s *wsService) AddClient(uid, mcuCode string, conn *websocket.Conn) *realti
 	s.mcuMap[mcuCode] = append(s.mcuMap[mcuCode], clientID)
 	s.mu.Unlock()
 
-	log.Printf("[WS Service] Client added: %s (UID: %s, MCU: %s)", clientID, uid, mcuCode)
+	log.Printf("[WS] Client added: %s (uid=%s mcu=%s)", clientID, uid, mcuCode)
 	return client
 }
 
@@ -56,79 +56,86 @@ func (s *wsService) RemoveClient(clientID string) {
 		return
 	}
 
-	mcuClients := s.mcuMap[client.MCUCode]
-	for i, id := range mcuClients {
-		if id == clientID {
-			s.mcuMap[client.MCUCode] = append(mcuClients[:i], mcuClients[i+1:]...)
-			break
+	if ids, ok := s.mcuMap[client.MCUCode]; ok {
+		for i, id := range ids {
+			if id == clientID {
+				s.mcuMap[client.MCUCode] = append(ids[:i], ids[i+1:]...)
+				break
+			}
 		}
-	}
-
-	if len(s.mcuMap[client.MCUCode]) == 0 {
-		delete(s.mcuMap, client.MCUCode)
+		if len(s.mcuMap[client.MCUCode]) == 0 {
+			delete(s.mcuMap, client.MCUCode)
+		}
 	}
 
 	close(client.Send)
 	delete(s.clients, clientID)
 
-	log.Printf("[WS Service] Client removed: %s", clientID)
+	log.Printf("[WS] Client removed: %s", clientID)
 }
 
 func (s *wsService) BroadcastToMCU(mcuCode string, message realtimeShared.RealtimeModel) error {
 	data, err := json.Marshal(message)
 	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
+		return err
 	}
 
 	s.mu.RLock()
-	clientIDs := s.mcuMap[mcuCode]
+	ids := append([]string(nil), s.mcuMap[mcuCode]...)
 	s.mu.RUnlock()
 
-	if len(clientIDs) == 0 {
-		log.Printf("[WS Service] No clients connected for MCU: %s", mcuCode)
+	if len(ids) == 0 {
 		return nil
 	}
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	for _, clientID := range clientIDs {
-		if client, ok := s.clients[clientID]; ok {
+	for _, id := range ids {
+		if client, ok := s.clients[id]; ok {
 			select {
 			case client.Send <- data:
 			default:
-				log.Printf("[WS Service] Client %s buffer full, skipping", clientID)
+				log.Printf("[WS] Client %s buffer full, skip", id)
 			}
 		}
 	}
 
-	log.Printf("[WS Service] Broadcasted %d messages to MCU: %s", len(clientIDs), mcuCode)
 	return nil
 }
 
-func (s *wsService) SendToClient(clientID string, message realtimeShared.RealtimeModel) error {
+func (s *wsService) SendToClient(uid string, message realtimeShared.RealtimeModel) error {
 	data, err := json.Marshal(message)
 	if err != nil {
-		return fmt.Errorf("failed to marshal message: %w", err)
+		return err
 	}
 
 	s.mu.RLock()
-	client, ok := s.clients[clientID]
-	s.mu.RUnlock()
+	defer s.mu.RUnlock()
 
-	if !ok {
-		return fmt.Errorf("client not found: %s", clientID)
+	sent := false
+	for _, client := range s.clients {
+		if client.UID == uid {
+			select {
+			case client.Send <- data:
+				sent = true
+			default:
+				log.Printf("[WS] Client %s buffer full", client.ID)
+			}
+		}
 	}
 
-	select {
-	case client.Send <- data:
-		return nil
-	default:
-		return fmt.Errorf("client buffer full")
+	if !sent {
+		return fmt.Errorf("no active client for uid=%s", uid)
 	}
+
+	return nil
 }
 
-func (s *wsService) HandleClientRead(client *realtimeShared.Client, onMessage func(clientID string, msg realtimeShared.RealtimeModel)) {
+func (s *wsService) HandleClientRead(
+	client *realtimeShared.Client,
+	onMessage func(clientID string, msg realtimeShared.RealtimeModel),
+) {
 	defer func() {
 		s.RemoveClient(client.ID)
 		client.Conn.Close()
@@ -144,15 +151,12 @@ func (s *wsService) HandleClientRead(client *realtimeShared.Client, onMessage fu
 	for {
 		_, message, err := client.Conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("[WS Service] Read error client %s: %v", client.ID, err)
-			}
 			break
 		}
 
 		var wsMsg realtimeShared.RealtimeModel
 		if err := json.Unmarshal(message, &wsMsg); err != nil {
-			log.Printf("[WS Service] Unmarshal error from client %s: %v", client.ID, err)
+			log.Printf("[WS] Unmarshal error client=%s err=%v", client.ID, err)
 			continue
 		}
 
@@ -185,7 +189,6 @@ func (s *wsService) HandleClientWrite(client *realtimeShared.Client) {
 
 			w.Write(msg)
 
-			// batch messages if available
 			n := len(client.Send)
 			for i := 0; i < n; i++ {
 				w.Write([]byte{'\n'})
@@ -203,20 +206,4 @@ func (s *wsService) HandleClientWrite(client *realtimeShared.Client) {
 			}
 		}
 	}
-}
-
-func (s *wsService) GetClientsByMCU(mcuCode string) []*realtimeShared.Client {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	clientIDs := s.mcuMap[mcuCode]
-	clients := make([]*realtimeShared.Client, 0, len(clientIDs))
-
-	for _, id := range clientIDs {
-		if client, ok := s.clients[id]; ok {
-			clients = append(clients, client)
-		}
-	}
-
-	return clients
 }

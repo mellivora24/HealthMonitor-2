@@ -7,18 +7,22 @@ import (
 )
 
 type HealthData struct {
-	ID                     uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID                 uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
-	DeviceID               uuid.UUID `gorm:"type:uuid;not null;index" json:"device_id"`
-	HeartRate              *float64  `gorm:"type:decimal(6,2)" json:"heart_rate,omitempty"`
-	SpO2                   *float64  `gorm:"type:decimal(5,2)" json:"spo2,omitempty"`
-	BodyTemperature        *float64  `gorm:"type:decimal(4,2)" json:"body_temperature,omitempty"`
-	BloodPressureSystolic  *float64  `gorm:"type:decimal(5,2)" json:"blood_pressure_systolic,omitempty"`
-	BloodPressureDiastolic *float64  `gorm:"type:decimal(5,2)" json:"blood_pressure_diastolic,omitempty"`
-	AccelX                 *float64  `gorm:"type:decimal(6,3)" json:"accel_x,omitempty"`
-	AccelY                 *float64  `gorm:"type:decimal(6,3)" json:"accel_y,omitempty"`
-	AccelZ                 *float64  `gorm:"type:decimal(6,3)" json:"accel_z,omitempty"`
-	CreatedAt              time.Time `gorm:"default:CURRENT_TIMESTAMP;index:idx_health_data_created_at,sort:desc" json:"created_at"`
+	ID       uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID   uuid.UUID `gorm:"type:uuid;not null;index:idx_health_data_user_id" json:"user_id"`
+	DeviceID uuid.UUID `gorm:"type:uuid;not null;index:idx_health_data_device_id" json:"device_id"`
+
+	HeartRate       *float64 `gorm:"type:decimal(6,2);column:heart_rate" json:"heart_rate,omitempty"`
+	SpO2            *float64 `gorm:"type:decimal(5,2);column:spo2" json:"spo2,omitempty"`
+	BodyTemperature *float64 `gorm:"type:decimal(4,2);column:body_temperature" json:"body_temperature,omitempty"`
+
+	BPSystolic  *float64 `gorm:"type:decimal(5,2);column:blood_pressure_systolic" json:"blood_pressure_systolic,omitempty"`
+	BPDiastolic *float64 `gorm:"type:decimal(5,2);column:blood_pressure_diastolic" json:"blood_pressure_diastolic,omitempty"`
+
+	AccelX *float64 `gorm:"type:decimal(6,3);column:accel_x" json:"accel_x,omitempty"`
+	AccelY *float64 `gorm:"type:decimal(6,3);column:accel_y" json:"accel_y,omitempty"`
+	AccelZ *float64 `gorm:"type:decimal(6,3);column:accel_z" json:"accel_z,omitempty"`
+
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;index:idx_health_data_created_at,sort:desc" json:"created_at"`
 }
 
 func (HealthData) TableName() string {

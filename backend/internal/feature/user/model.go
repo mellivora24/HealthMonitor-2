@@ -7,17 +7,20 @@ import (
 )
 
 type User struct {
-	ID           uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Email        string     `gorm:"type:varchar(255);unique;not null" json:"email"`
-	PasswordHash string     `gorm:"type:varchar(255);not null" json:"-"`
-	FullName     string     `gorm:"type:varchar(255);not null" json:"full_name"`
-	DateOfBirth  *time.Time `gorm:"type:date" json:"date_of_birth,omitempty"`
-	Gender       string     `gorm:"type:varchar(20)" json:"gender,omitempty"`
-	Phone        string     `gorm:"type:varchar(20)" json:"phone,omitempty"`
-	Height       *float64   `gorm:"type:decimal(5,2)" json:"height,omitempty"`
-	Weight       *float64   `gorm:"type:decimal(5,2)" json:"weight,omitempty"`
-	CreatedAt    time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
-	UpdatedAt    time.Time  `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
+	ID           uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email        string    `gorm:"type:varchar(255);unique;not null" json:"email"`
+	PasswordHash string    `gorm:"type:varchar(255);not null" json:"-"`
+	FullName     string    `gorm:"type:varchar(255);not null" json:"full_name"`
+
+	DateOfBirth *time.Time `gorm:"type:date" json:"date_of_birth,omitempty"`
+	Gender      string     `gorm:"type:varchar(20)" json:"gender,omitempty"`
+	Phone       string     `gorm:"type:varchar(20)" json:"phone,omitempty"`
+
+	Height *float64 `gorm:"type:decimal(5,2)" json:"height,omitempty"`
+	Weight *float64 `gorm:"type:decimal(5,2)" json:"weight,omitempty"`
+
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (User) TableName() string {

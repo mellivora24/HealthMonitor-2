@@ -7,11 +7,11 @@ import (
 )
 
 type Alert struct {
-	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID    uuid.UUID `gorm:"type:uuid;not null;index" json:"user_id"`
+	ID        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index:idx_alerts_user_id" json:"user_id"`
 	AlertType string    `gorm:"type:varchar(50);not null" json:"alert_type"`
 	Message   string    `gorm:"type:text;not null" json:"message"`
-	IsRead    bool      `gorm:"default:false;index" json:"is_read"`
+	IsRead    bool      `gorm:"default:false;index:idx_alerts_is_read" json:"is_read"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;index:idx_alerts_created_at,sort:desc" json:"created_at"`
 }
 
