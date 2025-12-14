@@ -10,6 +10,7 @@ import (
 	"backend/internal/feature/user"
 	mqttHandler "backend/internal/realtime/mqtt"
 	mqttService "backend/internal/realtime/mqtt"
+	telegram "backend/internal/realtime/telegrambot"
 	wsHandler "backend/internal/realtime/websocket"
 	wsService "backend/internal/realtime/websocket"
 	sharedPkg "backend/internal/shared"
@@ -28,14 +29,15 @@ import (
 )
 
 type Application struct {
-	config      *sharedPkg.Config
-	db          *database.PostgresDB
-	mqttClient  *network.MQTTClient
-	wsHub       *network.WebSocketHub
-	router      *gin.Engine
-	validator   sharedPkg.Validator
-	mqttHandler *mqttHandler.Handler
-	wsHandler   *wsHandler.Handler
+	config          *sharedPkg.Config
+	db              *database.PostgresDB
+	mqttClient      *network.MQTTClient
+	wsHub           *network.WebSocketHub
+	router          *gin.Engine
+	validator       sharedPkg.Validator
+	telegramService *telegram.Service
+	mqttHandler     *mqttHandler.Handler
+	wsHandler       *wsHandler.Handler
 }
 
 func main() {
@@ -69,6 +71,9 @@ func initializeApplication() (*Application, error) {
 
 	wsHub := network.NewWebSocketHub(&config.WebSocket)
 
+	// Khởi tạo Telegram service
+	telegramService := initializeTelegramService()
+
 	if config.Server.Mode == "release" {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -83,12 +88,13 @@ func initializeApplication() (*Application, error) {
 	}))
 
 	app := &Application{
-		config:     config,
-		db:         db,
-		mqttClient: mqttClient,
-		wsHub:      wsHub,
-		router:     router,
-		validator:  validate,
+		config:          config,
+		db:              db,
+		mqttClient:      mqttClient,
+		wsHub:           wsHub,
+		router:          router,
+		validator:       validate,
+		telegramService: telegramService,
 	}
 
 	if err := app.setupHandlers(); err != nil {
@@ -101,9 +107,55 @@ func initializeApplication() (*Application, error) {
 		return nil, fmt.Errorf("failed to initialize MQTT handler: %w", err)
 	}
 
+	// Gửi tin nhắn khởi động hệ thống
+	if telegramService != nil && telegramService.Enabled {
+		startupMsg := fmt.Sprintf(
+			"🚀 *Health Monitoring System Started*\n\n"+
+				"🌐 Server: %s:%d\n"+
+				"⏰ Time: %s\n"+
+				"✅ All services are running",
+			config.Server.Host,
+			config.Server.Port,
+			time.Now().Format("15:04:05 02/01/2006"),
+		)
+		if err := telegramService.SendMarkdownMessage(startupMsg); err != nil {
+			log.Printf("⚠️  Warning: Failed to send startup message to Telegram: %v", err)
+		} else {
+			log.Println("📱 Telegram notification: System started")
+		}
+	}
+
 	fmt.Println("Backend is running at", fmt.Sprintf("%s:%d", config.Server.Host, config.Server.Port))
 
 	return app, nil
+}
+
+// initializeTelegramService khởi tạo Telegram service từ environment variables
+func initializeTelegramService() *telegram.Service {
+	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	chatID := os.Getenv("TELEGRAM_CHAT_ID")
+	enabled := os.Getenv("TELEGRAM_ENABLED") == "true"
+
+	if !enabled {
+		log.Println("ℹ️  Telegram notifications are disabled")
+		return telegram.NewService(telegram.Config{
+			Enabled: false,
+		})
+	}
+
+	if botToken == "" || chatID == "" {
+		log.Println("⚠️  Warning: Telegram bot token or chat ID not configured. Telegram notifications disabled.")
+		return telegram.NewService(telegram.Config{
+			Enabled: false,
+		})
+	}
+
+	log.Printf("✓ Telegram service initialized (Chat ID: %s)", chatID)
+	return telegram.NewService(telegram.Config{
+		BotToken: botToken,
+		ChatID:   chatID,
+		Enabled:  true,
+	})
 }
 
 func (app *Application) setupHandlers() error {
@@ -135,6 +187,7 @@ func (app *Application) setupHandlers() error {
 	wsServiceImpl := wsService.NewService(app.wsHub)
 	mqttServiceImpl := mqttService.NewService(app.mqttClient)
 
+	// Khởi tạo MQTT Handler với Telegram service và User service
 	app.mqttHandler = mqttHandler.NewHandler(
 		mqttServiceImpl,
 		wsServiceImpl,
@@ -142,6 +195,8 @@ func (app *Application) setupHandlers() error {
 		deviceService,
 		alertService,
 		thresholdService,
+		app.telegramService,
+		userService,
 	)
 
 	app.wsHandler = wsHandler.NewHandler(wsServiceImpl)
@@ -277,6 +332,7 @@ func (app *Application) healthCheck(c *gin.Context) {
 			"database":  "ok",
 			"mqtt":      "ok",
 			"websocket": "ok",
+			"telegram":  "ok",
 		},
 	}
 
@@ -293,6 +349,10 @@ func (app *Application) healthCheck(c *gin.Context) {
 	if err := app.wsHub.HealthCheck(); err != nil {
 		status["services"].(map[string]interface{})["websocket"] = "error"
 		status["status"] = "degraded"
+	}
+
+	if app.telegramService == nil || !app.telegramService.Enabled {
+		status["services"].(map[string]interface{})["telegram"] = "disabled"
 	}
 
 	c.JSON(http.StatusOK, status)
@@ -342,6 +402,21 @@ func (app *Application) start() error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
+	log.Println("🛑 Shutting down server...")
+
+	// Gửi tin nhắn shutdown
+	if app.telegramService != nil && app.telegramService.Enabled {
+		shutdownMsg := fmt.Sprintf(
+			"🛑 *Health Monitoring System Shutdown*\n\n"+
+				"⏰ Time: %s\n"+
+				"ℹ️  Server stopped gracefully",
+			time.Now().Format("15:04:05 02/01/2006"),
+		)
+		if err := app.telegramService.SendMarkdownMessage(shutdownMsg); err != nil {
+			log.Printf("⚠️  Warning: Failed to send shutdown message to Telegram: %v", err)
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -355,5 +430,6 @@ func (app *Application) start() error {
 		log.Printf("Error closing database: %v", err)
 	}
 
+	log.Println("✓ Server shutdown complete")
 	return nil
 }

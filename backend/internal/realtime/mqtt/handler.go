@@ -5,7 +5,9 @@ import (
 	"backend/internal/feature/device"
 	"backend/internal/feature/health_data"
 	"backend/internal/feature/threshold"
+	"backend/internal/feature/user"
 	"backend/internal/realtime/shared"
+	telegram "backend/internal/realtime/telegrambot"
 	"encoding/json"
 	"log"
 	"time"
@@ -21,6 +23,8 @@ type Handler struct {
 	deviceService     device.Service
 	alertService      alert.Service
 	thresholdService  threshold.Service
+	telegramService   *telegram.Service
+	userService       user.Service
 }
 
 func NewHandler(
@@ -30,6 +34,8 @@ func NewHandler(
 	deviceService device.Service,
 	alertService alert.Service,
 	thresholdService threshold.Service,
+	telegramService *telegram.Service,
+	userService user.Service,
 ) *Handler {
 	return &Handler{
 		mqttService:       mqttService,
@@ -38,6 +44,8 @@ func NewHandler(
 		deviceService:     deviceService,
 		alertService:      alertService,
 		thresholdService:  thresholdService,
+		telegramService:   telegramService,
+		userService:       userService,
 	}
 }
 
@@ -164,8 +172,9 @@ func (h *Handler) createAlert(userID uuid.UUID, alertType, message string) {
 		return
 	}
 
-	log.Printf("[MQTT Handler]  Alert created: [%s] %s", alertType, message)
+	log.Printf("[MQTT Handler] 🚨 Alert created: [%s] %s", alertType, message)
 
+	// Gửi alert qua WebSocket
 	alertData := map[string]interface{}{
 		"user_id":    userID,
 		"alert_type": alertType,
@@ -181,5 +190,35 @@ func (h *Handler) createAlert(userID uuid.UUID, alertType, message string) {
 
 	if err := h.wsService.SendToClient(userID.String(), wsMsg); err != nil {
 		log.Printf("[MQTT Handler] Error broadcasting alert: %v", err)
+	}
+
+	// Gửi alert qua Telegram
+	h.sendTelegramNotification(userID, alertType, message)
+}
+
+func (h *Handler) sendTelegramNotification(userID uuid.UUID, alertType, message string) {
+	if h.telegramService == nil {
+		return
+	}
+
+	userName := "Unknown User"
+	if user, err := h.userService.GetProfile(userID); err == nil && user != nil {
+		userName = user.FullName
+		if userName == "" {
+			userName = user.Email
+		}
+	}
+
+	var err error
+	if alertType == alert.AlertTypeFallDetection {
+		err = h.telegramService.SendFallAlert(userName, message)
+	} else {
+		err = h.telegramService.SendHealthAlert(userName, alertType, message)
+	}
+
+	if err != nil {
+		log.Printf("[MQTT Handler] Error sending Telegram notification: %v", err)
+	} else {
+		log.Printf("[MQTT Handler] 📱 Telegram notification sent for user: %s", userName)
 	}
 }

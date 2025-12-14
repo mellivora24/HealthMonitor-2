@@ -122,3 +122,8 @@ SELECT DISTINCT ON (user_id)
     created_at
 FROM health_data
 ORDER BY user_id, created_at DESC;
+
+
+-- add update_at to health_thresholds
+ALTER TABLE health_thresholds
+ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
